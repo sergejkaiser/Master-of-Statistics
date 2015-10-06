@@ -1,0 +1,94 @@
+library(foreign)
+library(xtable)
+library(dplyr)
+file.choose()
+data = read.csv("/Users/sergej/Documents/QASS Master/hw2.csv", sep=";", header=T)
+covariation.x.z <-sum((data$X-mean(data$X))*(data$Z-mean(data$Z)))
+variation.x <-sum((data$X-mean(data$X))^2)
+variation.z <-sum((data$Z-mean(data$Z))^2)
+
+data$Group<-NULL
+summarise(data,
+          m_x=mean(X),
+          m_z=mean(Z),
+          covariation=cov(X,Z)*14,
+          covar_x=cov(X,Z),
+          variation_x=var(X)*14,
+          variation_z=var(Z)*14, 
+          var_x=var(X),
+          var_z=var(Z))
+
+grouped<-group_by(data, Y)
+
+
+total<-summarise(data,
+ m_x=mean(X),
+ m_z=mean(Z),
+  variation_x=var(X)*14,
+ variation_z=var(Z)*14, 
+ covariation=cov(X,Z)*14
+ )
+xtable(total
+  )
+grouped<-matrix(c(c(0,1),c(mean(data$X[data$Y==0 ])),mean(data$X[data$Y==1 ]),c(mean(data$Z[data$Y==0 ]),mean(data$Z[data$Y==1 ])),
+c(sum(((data$X[data$Y==0 ])-mean(data$X[data$Y==0 ]))^2), sum(((data$X[data$Y==1 ])-mean(data$X[data$Y==1 ]))^2)),
+c(sum(((data$Z[data$Y==0 ])-mean(data$Z[data$Y==0 ]))^2), sum(((data$Z[data$Y==1 ])-mean(data$Z[data$Y==1 ]))^2)                                                                                                                                , c(sum(((data$X[data$Y==0 ])-mean(data$X[data$Y==0 ]))*((data$Z[data$Y==0 ])-mean(data$X[data$Y==0 ]))),
+          sum(((data$X[data$Y==1 ])-mean(data$X[data$Y==1 ]))*((data$Z[data$Y==1 ])-mean(data$X[data$Y==1 ]))
+          ) ))),byrow=F, nrow = 2)
+colnames(grouped)<-c("Y","mean.x.1","mean.x.2","variation.x.1","variation.x.2","covariation")
+rownames(grouped)<-c("opposer","supporter")
+xtable(grouped)
+
+
+#Total Variation
+T<-matrix(c(var(data$X),cov(data$X,data$Z),cov(data$X,data$Z),var(data$Z)), byrow=TRUE, ncol=2)*14
+
+#Within Variation
+W<-matrix(c(sum((data$X[data$Y==0 ]-mean(data$X[data$Y==0 ]))^2)+sum((data$X[data$Y==1 ]-mean(data$X[data$Y==1 ]))^2),
+ sum((data$X[data$Y==0]-mean(data$X[data$Y==0 ]))*(data$Z[data$Y==0 ]-mean(data$X[data$Y==0 ])))+
+  sum((data$X[data$Y==1 ]-mean(data$X[data$Y==1 ]))*(data$Z[data$Y==1 ]-mean(data$X[data$Y==1 ]))),
+sum(((data$X[data$Y==0 ])-mean(data$X[data$Y==0 ]))*((data$Z[data$Y==0 ])-mean(data$X[data$Y==0 ]))) + 
+  sum(((data$X[data$Y==1 ])-mean(data$X[data$Y==1 ]))*((data$Z[data$Y==1 ])-mean(data$X[data$Y==1 ]))),
+sum(((data$Z[data$Y==0 ])-mean(data$Z[data$Y==0 ]))^2)+sum(((data$Z[data$Y==1 ])-mean(data$Z[data$Y==1 ]))^2)),2,byrow=TRUE )                                                                                                                                                                                                                                                            sum(((data$X[data$Y==1 ])-mean(data$X[data$Y==1 ]))*((data$Z[data$Y==1 ])-mean(data$X[data$Y==1 ]))
+                                                                                                                                                                                                                                                              
+
+sum(((data$X[data$Y==1 ])-mean(data$X[data$Y==1 ]))^2)
+B<-T-W
+
+#print matrices in latex
+x=xtable(T,align=rep("",ncol(T)+1)) # We repeat empty string 6 times
+ print(x, floating=FALSE, tabular.environment="bmatrix", 
+        hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
+y=xtable(W,align=rep("",ncol(W)+1)) # We repeat empty string 6 times
+print(y, floating=FALSE, tabular.environment="bmatrix", 
+      hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
+
+z=xtable(B,align=rep("",ncol(W)+1)) # We repeat empty string 6 times
+print(z, floating=FALSE, tabular.environment="bmatrix", 
+      hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
+
+#Step one calc W^-1 *B
+S<-solve(W)%*%B
+#largest eigenvalue of W^-1*B
+s=xtable(S,align=rep("",ncol(W)+1)) # We repeat empty string 6 times
+print(s, floating=FALSE, tabular.environment="pmatrix", 
+      hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
+
+# The solution to the W^-1 *B-\lambda *I=0 is
+x=1.13868
+#Step two calc k from  (W^-1 *B-\lambda *I)k=0
+
+WBl<-S-x*diag(2)
+
+r=xtable(WBl,align=rep("",ncol(W)+1)) # We repeat empty string 6 times
+print(r, floating=FALSE, tabular.environment="pmatrix", 
+      hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
+WBl.tr<-t(WBl)
+#one solution for k 
+k<-as.matrix(c(-WBl[1,2],WBl[1,1]),nrow=2)
+#normalize k to unit length
+k.norm<-1/(k[1,1]^2+k[2,1]^2)^(1/2)*k
+#print outcome in latex 
+q=xtable(k.norm,align=rep("",ncol(W)+1)) # We repeat empty string 6 times
+print(q, floating=FALSE, tabular.environment="pmatrix", 
+      hline.after=NULL, include.rownames=FALSE, include.colnames=FALSE)
